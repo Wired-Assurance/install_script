@@ -41,6 +41,21 @@ install_docker_rhel() {
     sudo yum install docker-ce -y
 }
 
+# Function to install Docker on Amazon Linux
+install_docker_amazon_linux() {
+    echo "Updating package database..."
+    sudo yum update -y
+
+    echo "Installing Docker..."
+    sudo amazon-linux-extras install docker -y
+
+    echo "Starting Docker service..."
+    sudo service docker start
+
+    echo "Enabling Docker service to start on boot..."
+    sudo systemctl enable docker
+}
+
 # Check if necessary environment variables are set
 if [ -z "$COLLECTION_ID" ]; then
     echo "Error: COLLECTION_ID."
@@ -49,12 +64,25 @@ fi
 
 echo "COLLECTION_ID: $COLLECTION_ID"
 
+# Detect the operating system
+if grep -q -i "ubuntu" /etc/os-release; then
+    OS="ubuntu"
+elif grep -q -i "amzn" /etc/os-release; then
+    OS="amazon_linux"
+else
+    echo "Unsupported OS. Please install Docker manually."
+    exit 1
+fi
+
+
 # Install Docker if not already installed
 if ! command_exists docker; then
     if command_exists apt-get; then
         install_docker_debian
     elif command_exists yum; then
         install_docker_rhel
+    elif [ "$OS" == "amazon_linux" ]; then
+        install_docker_amazon_linux
     else
         echo "Unsupported package manager. Please install Docker manually."
         exit 1
